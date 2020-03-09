@@ -90,32 +90,6 @@ def read_Collection_ROMs_JSON(fname):
 
     return roms
 
-def new_system_dic():
-    return {
-        'name' : '',
-        'fullname' : '',
-        'path' : '',
-        'extension' : '',
-        'command' : '',
-        'platform' : '',
-        'theme' : '',
-        'extension_list' : [],
-    }
-
-# See https://github.com/Aloshi/EmulationStation/blob/master/GAMELISTS.md
-def new_game_dic():
-    return {
-        'path' : '',
-        'name' : '',
-        'desc' : '',
-        'image' : '',
-        'releasedate' : '',
-        'developer' : '',
-        'publisher' : '',
-        'genre' : '',
-        'players' : '',
-    }
-
 def XML_text(tag_name, tag_text, num_spaces = 2):
     if tag_text:
         tag_text = text_escape_XML(tag_text)
@@ -176,26 +150,30 @@ for rom in roms:
     if es_platform not in es_systems_idx:
         core_path = os.path.join(LIBRETRO_PATH, 'corename.so')
         command = '{} -L {} %ROM%'.format(RETROARCH_PATH, core_path)
-        system = new_system_dic()
-        system['name'] = es_platform
-        system['fullname'] = ''
-        system['path'] = os.path.join(ES_ROMS_DIR, es_platform)
-        system['command'] = command
-        system['platform'] = es_platform
-        system['theme'] = es_platform
+        system = {
+            'name' : es_platform,
+            'fullname' : '',
+            'path' : os.path.join(ES_ROMS_DIR, es_platform),
+            'command' : command,
+            'platform' : es_platform,
+            'theme' : es_platform,
+            'extension_list' : [],
+        }
         es_systems_list.append(system)
         es_systems_idx[es_platform] = len(es_systems_list) - 1
         es_gamelist_dic[es_platform] = []
 
     # Add ROM to ES database.
-    es_rom = new_game_dic()
-    es_rom['name'] = rom['m_name']
-    es_rom['desc'] = rom['m_plot']
-    es_rom['releasedate'] = ''
-    es_rom['developer'] = rom['m_developer']
-    es_rom['publisher'] = ''
-    es_rom['genre'] = rom['m_genre']
-    es_rom['players'] = rom['m_nplayers']
+    # See https://github.com/Aloshi/EmulationStation/blob/master/GAMELISTS.md
+    es_rom = {
+        'name' : rom['m_name'],
+        'desc' : rom['m_plot'],
+        'releasedate' : '',
+        'developer' : rom['m_developer'],
+        'publisher' : '',
+        'genre' : rom['m_genre'],
+        'players' : rom['m_nplayers'],
+    }
     es_gamelist_dic[es_platform].append(es_rom)
 
     # Add ROM extension to the list of extensions for this system.
