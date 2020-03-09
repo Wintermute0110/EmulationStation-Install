@@ -23,14 +23,16 @@
 from __future__ import unicode_literals
 import json
 import os
+import shutil
 import sys
 import xml.etree.ElementTree
 
 # --- Configuration ------------------------------------------------------------------------------
-AEL_COLLECTION_NAME = 'Sonic test'
+AEL_COLLECTION_NAME = 'EmulationStation'
 AEL_ROM_ARTWORK_FIELD = 's_3dbox'
 RETROARCH_PATH = '/home/kodi/bin/retroarch'
 LIBRETRO_PATH = '/home/kodi/bin/libretro/'
+KODI_USERDATA_DIR = '/home/kodi/.kodi/userdata/'
 AEL_DATA_DIR = '/home/kodi/.kodi/userdata/addon_data/plugin.program.advanced.emulator.launcher/'
 ES_ROMS_DIR = '/home/kodi/EmulationStation-ROMs/'
 ES_CONFIG_DIR = '/home/kodi/.emulationstation/'
@@ -39,9 +41,16 @@ ES_CONFIG_DIR = '/home/kodi/.emulationstation/'
 # ES platform names https://github.com/RetroPie/es-theme-carbon
 def AEL_to_ES_platform(platform):
     AEL_to_ES_platform = {
-        'Sega MegaDrive' : 'megadrive',
-        'Sega Master System' : 'sms',
-        'asdfg' : 'mame',
+        'NEC PC Engine' : ('pcengine', 'PC Engine'),
+
+        'Nintendo NES' : ('nes', 'Nintendo Entertainment System'),
+        'Nintendo SNES' : ('snes', 'Super Nintendo'),
+
+        'Sega 32X' : ('sega32x', 'Sega 32X'),
+        'Sega Mega Drive' : ('megadrive', 'Mega Drive'),
+        'Sega Master System' : ('mastersystem', 'Master System'),
+
+        'Sony PlayStation' :  ('psx', 'PlayStation'),
     }
 
     return AEL_to_ES_platform[platform]
@@ -146,13 +155,16 @@ es_systems_idx = {} # Key platform, value index in es_systems_list
 es_gamelist_dic = {} # Key system name, value list of dictionaries new_game_dic().
 for rom in roms:
     # Check if ES system exists for this ROM. If not create it.
-    es_platform = AEL_to_ES_platform(rom['platform'])
+    platform_tuple = AEL_to_ES_platform(rom['platform'])
+    es_platform = platform_tuple[0]
+    long_platform = platform_tuple[1]
+    # corename = platform_tuple[2]
     if es_platform not in es_systems_idx:
         core_path = os.path.join(LIBRETRO_PATH, 'corename.so')
         command = '{} -L {} %ROM%'.format(RETROARCH_PATH, core_path)
         system = {
             'name' : es_platform,
-            'fullname' : '',
+            'fullname' : long_platform,
             'path' : os.path.join(ES_ROMS_DIR, es_platform),
             'command' : command,
             'platform' : es_platform,
@@ -182,14 +194,17 @@ for rom in roms:
     if rom_ext not in system['extension_list']: system['extension_list'].append(rom_ext)
 
     # Copy ROM ZIP file.
+    # TODO Only copy file is src is newer than dest.
     rom_fname = rom['filename']
     rom_basename = os.path.basename(rom_fname)
     new_rom_fname = os.path.join(ES_ROMS_DIR, es_platform, rom_basename)
+    new_rom_dir = os.path.dirname(new_rom_fname)
     es_rom['path'] = new_rom_fname
     print('\n ROM {}'.format(rom_basename))
     print('Copy {}'.format(rom_fname))
     print('  to {}'.format(new_rom_fname))
-    # shutil.copy(rom_fname, new_rom_fname)
+    if not os.path.exists(new_rom_dir): os.makedirs(new_rom_dir)
+    shutil.copy(rom_fname, new_rom_fname)
 
     # Copy ROM artwork file. Artwork must have same name as ROM (but different extension).
     art_fname = rom[AEL_ROM_ARTWORK_FIELD]
@@ -198,10 +213,12 @@ for rom in roms:
     rom_basename_noext = os.path.splitext(rom_basename)[0]
     new_art_fname = os.path.join(ES_ROMS_DIR, es_platform, rom_basename_noext + art_ext)
     es_rom['image'] = new_art_fname
-    print('\n Art {}'.format(art_basename))
+    if art_fname.startswith('special://profile/'):
+        art_fname = art_fname.replace('special://profile/', KODI_USERDATA_DIR)
+    print(' Art {}'.format(art_basename))
     print('Copy {}'.format(art_fname))
     print('  to {}'.format(new_art_fname))
-    # shutil.copy(art_fname, new_art_fname)
+    shutil.copy(art_fname, new_art_fname)
 
 # Generate es_systems.cfg.
 print('\nGenerating es_systems.cfg')
