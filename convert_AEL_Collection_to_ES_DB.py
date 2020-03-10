@@ -41,16 +41,16 @@ ES_CONFIG_DIR = '/home/kodi/.emulationstation/'
 # ES platform names https://github.com/RetroPie/es-theme-carbon
 def AEL_to_ES_platform(platform):
     AEL_to_ES_platform = {
-        'NEC PC Engine' : ('pcengine', 'PC Engine'),
+        'NEC PC Engine' : ('pcengine', 'PC Engine', 'mednafen_pce_fast_libretro.so'),
 
-        'Nintendo NES' : ('nes', 'Nintendo Entertainment System'),
-        'Nintendo SNES' : ('snes', 'Super Nintendo'),
+        'Nintendo NES' : ('nes', 'Nintendo Entertainment System', 'mesen_libretro.so'),
+        'Nintendo SNES' : ('snes', 'Super Nintendo', 'snes9x_libretro.so'),
 
-        'Sega 32X' : ('sega32x', 'Sega 32X'),
-        'Sega Mega Drive' : ('megadrive', 'Mega Drive'),
-        'Sega Master System' : ('mastersystem', 'Master System'),
+        'Sega 32X' : ('sega32x', 'Sega 32X', 'picodrive_libretro.so'),
+        'Sega Mega Drive' : ('megadrive', 'Mega Drive', 'genesis_plus_gx_libretro.so'),
+        'Sega Master System' : ('mastersystem', 'Master System', 'genesis_plus_gx_libretro.so'),
 
-        'Sony PlayStation' :  ('psx', 'PlayStation'),
+        'Sony PlayStation' :  ('psx', 'PlayStation', 'mednafen_psx_libretro.so'),
     }
 
     return AEL_to_ES_platform[platform]
@@ -158,9 +158,9 @@ for rom in roms:
     platform_tuple = AEL_to_ES_platform(rom['platform'])
     es_platform = platform_tuple[0]
     long_platform = platform_tuple[1]
-    # corename = platform_tuple[2]
+    corename = platform_tuple[2]
     if es_platform not in es_systems_idx:
-        core_path = os.path.join(LIBRETRO_PATH, 'corename.so')
+        core_path = os.path.join(LIBRETRO_PATH, corename)
         command = '{} -L {} %ROM%'.format(RETROARCH_PATH, core_path)
         system = {
             'name' : es_platform,
