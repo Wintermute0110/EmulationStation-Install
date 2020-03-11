@@ -49,14 +49,24 @@ def AEL_to_ES_platform(platform):
     AEL_to_ES_platform = {
         'NEC PC Engine' : ('pcengine', 'PC Engine', 'mednafen_pce_fast_libretro.so'),
 
+        'Nintendo GameBoy' : ('gb', 'Nintendo GameBoy', 'xxxxx.so'),
+        'Nintendo GameBoy Color' : ('gbc', 'Nintendo GameBoy Color', 'xxxxx.so'),
+        'Nintendo GameBoy Advance' : ('gba', 'Nintendo GameBoy Advance', 'xxxxx.so'),
+        'Nintendo 64' : ('n64', 'Nintendo 64', 'xxxxx.so'),
+        'Nintendo DS' : ('nds', 'Nintendo DS', 'xxxxx.so'),
         'Nintendo NES' : ('nes', 'Nintendo Entertainment System', 'mesen_libretro.so'),
         'Nintendo SNES' : ('snes', 'Super Nintendo', 'snes9x_libretro.so'),
 
         'Sega 32X' : ('sega32x', 'Sega 32X', 'picodrive_libretro.so'),
+        'Sega Dreamcast' : ('dreamcast', 'Sega Dreamcast', 'xxxxx.so'),
+        'Sega Game Gear' : ('gamegear', 'Sega Game Gear', 'xxxxx.so'),
+        'Sega MegaCD' : ('segacd', 'Sega MegaCD', 'xxxxx.so'),
         'Sega Mega Drive' : ('megadrive', 'Mega Drive', 'genesis_plus_gx_libretro.so'),
         'Sega Master System' : ('mastersystem', 'Master System', 'genesis_plus_gx_libretro.so'),
+        'Sega Saturn' : ('saturn', 'Sega Saturn', 'xxxxx.so'),
 
         'Sony PlayStation' :  ('psx', 'PlayStation', 'mednafen_psx_libretro.so'),
+        'Sony PlayStation Portable' :  ('psp', 'PlayStation', 'mednafen_psx_libretro.so'),
     }
 
     return AEL_to_ES_platform[platform]
