@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 
 # Converts an AEL ROM Collection into EmulationStation databases.
-# It copies the collection ROMs to a new location.
+# Also converts AML Favourites.
+# It copies all ROMs to a new location.
 # It generates es_systems.cfg and the necessary gamelist.xml.
 # Note that this overwrites the EmulationStation databases.
 # ES does not support rendering Unicode characters, plots are converted to ASCII.
@@ -30,10 +31,14 @@ import xml.etree.ElementTree
 # --- Configuration ------------------------------------------------------------------------------
 AEL_COLLECTION_NAME = 'EmulationStation'
 AEL_ROM_ARTWORK_FIELD = 's_3dbox'
+AML_ROM_ARTWORK_FIELD = '3dbox' # 3dbox, cabinet, snap, title
+ES_MAME_PLATFORM = 'mame'
 RETROARCH_PATH = '/home/kodi/bin/retroarch'
 LIBRETRO_PATH = '/home/kodi/bin/libretro/'
 KODI_USERDATA_DIR = '/home/kodi/.kodi/userdata/'
 AEL_DATA_DIR = '/home/kodi/.kodi/userdata/addon_data/plugin.program.advanced.emulator.launcher/'
+AML_DATA_DIR = '/home/kodi/.kodi/userdata/addon_data/plugin.program.AML/'
+AML_SOURCE_ROMS_DIR = '/home/kodi/MAME-ROMs/'
 ES_ROMS_DIR = '/home/kodi/EmulationStation-ROMs/'
 ES_CONFIG_DIR = '/home/kodi/.emulationstation/'
 
@@ -54,6 +59,12 @@ def AEL_to_ES_platform(platform):
     }
 
     return AEL_to_ES_platform[platform]
+
+C_RED   = "\033[1;31m"
+C_BLUE  = "\033[1;34m"
+C_CYAN  = "\033[1;36m"
+C_GREEN = "\033[0;32m"
+C_END   = "\033[0;0m"
 
 # --- Functions ----------------------------------------------------------------------------------
 # Returns a list of dictionaries and a dictionary index { m_name : index, ... }
@@ -99,6 +110,19 @@ def read_Collection_ROMs_JSON(fname):
 
     return roms
 
+def fs_load_JSON_file_dic(json_filename, verbose = True):
+    # --- If file does not exist return empty dictionary ---
+    data_dic = {}
+    if not os.path.isfile(json_filename):
+        print('fs_load_JSON_file_dic() File not found "{}"'.format(json_filename))
+        return data_dic
+    if verbose:
+        print('fs_load_JSON_file_dic() "{}"'.format(json_filename))
+    with open(json_filename) as file:
+        data_dic = json.load(file)
+
+    return data_dic
+
 def XML_text(tag_name, tag_text, num_spaces = 2):
     if tag_text:
         tag_text = text_escape_XML(tag_text)
@@ -133,29 +157,45 @@ def text_unescape_XML(data_str):
 
     return data_str
 
+def copy_file_if_new(src_fname, dest_fname):
+    # If destination file does not exists copy automatically.
+    if os.path.isfile(dest_fname):
+        # File exists. Check if sizes are different.
+        # Check if source is newer than dest. st_mtime is seconds since the epoch.
+        src_stat = os.stat(src_fname)
+        dest_stat = os.stat(dest_fname)
+        if src_stat.st_size == dest_stat.st_size and src_stat.st_mtime < dest_stat.st_mtime:
+            # Not necessary to copy file.
+            return
+    # If we reach this point copy file.
+    print('Copy {}'.format(src_fname))
+    print('  to {}'.format(dest_fname))
+    dest_fname_dir = os.path.dirname(dest_fname)
+    # if not os.path.exists(dest_fname_dir): os.makedirs(dest_fname_dir)
+    # shutil.copy(src_fname, dest_fname)
+
 # files_set is a fully qualified file names.
 # Also cleans empty subdirectories.
 def clean_unknown_files(dir_name, files_set):
-    print('\nCleaning files in "{}"'.format(dir_name))
     # Root is a string with a directory. dirs and files are lists.
-    # The loops produces an interation for every subdirectory in dir_name, including
-    # dir_name itself.
+    # The loops produces an interation for every subdirectory in dir_name,
+    # including dir_name itself.
     for root, dirs, files in os.walk(dir_name):
         # Clean files not in list.
         for file in files:
             file_name = os.path.join(root, file)
-            if file_name not in files_set:
-                print('RM file "{}"'.format(file_name))
-                # os.unlink(file_name)
+            if file_name in files_set: continue
+            print('RM file "{}"'.format(file_name))
+            # os.unlink(file_name)
 
     # Clean empty subdirectories.
     for root, dirs, files in os.walk(dir_name):
-        if not dirs and not files:
-            print('RM empty dir "{}"'.format(root))
-            # os.rmdir(file_name)
+        if dirs or files: continue
+        print('RM empty dir "{}"'.format(root))
+        # os.rmdir(file_name)
 
 # --- Main ---------------------------------------------------------------------------------------
-print('Converting AEL Collection {} to ES database'.format(AEL_COLLECTION_NAME))
+print(C_RED + 'Converting AEL Collection {} to ES database'.format(AEL_COLLECTION_NAME) + C_END)
 
 # Open AEL collection index.
 collection_fname = os.path.join(AEL_DATA_DIR, 'collections.xml')
@@ -163,18 +203,31 @@ collections, collections_idx = read_Collection_XML(collection_fname)
 if AEL_COLLECTION_NAME not in collections_idx:
     print('Collection {} not found. Exiting.'.format(AEL_COLLECTION_NAME))
     sys.exit(1)
+print('Loaded {} collections'.format(len(collections)))
 collection_dic = collections[collections_idx[AEL_COLLECTION_NAME]]
 
 # Open collection ROMs DB.
 roms_base_noext = collection_dic['roms_base_noext']
 collection_ROMs_fname = os.path.join(AEL_DATA_DIR, 'db_Collections' + '/' + roms_base_noext + '.json')
 roms = read_Collection_ROMs_JSON(collection_ROMs_fname)
+print('Loaded {} ROMs'.format(len(roms)))
+
+# Read AML Favourites.
+AML_favs_fname = os.path.join(AML_DATA_DIR, 'Favourite_Machines.json')
+aml_favs = fs_load_JSON_file_dic(AML_favs_fname)
+print('Loaded {} machines'.format(len(aml_favs)))
+
+# Read ROM_Set_machine_files.json to know the dependencies (ZIP, CHD, Sample) of each machine.
+RSMF_fname = os.path.join(AML_DATA_DIR, 'ROM_Set_machine_files.json')
+RSMF_dic = fs_load_JSON_file_dic(RSMF_fname)
+print('Loaded {} machines'.format(len(RSMF_dic)))
 
 # Traverse ROMs, copy ROM files and artwork.
 es_systems_list = [] # List of new_system_dic() dictionaries.
 es_systems_idx = {} # Key platform, value index in es_systems_list
 es_gamelist_dic = {} # Key system name, value list of dictionaries new_game_dic().
 Files_set = set()
+print(C_RED + 'Synchronizing AEL Collection ROMs...' + C_END)
 for rom in roms:
     # Check if ES system exists for this ROM. If not create it.
     platform_tuple = AEL_to_ES_platform(rom['platform'])
@@ -217,16 +270,11 @@ for rom in roms:
 
     # Copy ROM ZIP file.
     # TODO Only copy file is src is newer than dest.
-    rom_fname = rom['filename']
-    rom_basename = os.path.basename(rom_fname)
+    rom_basename = os.path.basename(rom['filename'])
     new_rom_fname = os.path.join(ES_ROMS_DIR, es_platform, rom_basename)
-    new_rom_dir = os.path.dirname(new_rom_fname)
     es_rom['path'] = new_rom_fname
-    print('\n ROM {}'.format(rom_basename))
-    print('Copy {}'.format(rom_fname))
-    print('  to {}'.format(new_rom_fname))
-    if not os.path.exists(new_rom_dir): os.makedirs(new_rom_dir)
-    # shutil.copy(rom_fname, new_rom_fname)
+    print(C_GREEN + 'ROM {}'.format(rom_basename) + C_END)
+    copy_file_if_new(rom['filename'], new_rom_fname)
     Files_set.add(new_rom_fname)
 
     # Copy ROM artwork file. Artwork must have same name as ROM (but different extension).
@@ -239,16 +287,77 @@ for rom in roms:
     if art_fname.startswith('special://profile/'):
         art_fname = art_fname.replace('special://profile/', KODI_USERDATA_DIR)
     print(' Art {}'.format(art_basename))
-    print('Copy {}'.format(art_fname))
-    print('  to {}'.format(new_art_fname))
-    # shutil.copy(art_fname, new_art_fname)
+    copy_file_if_new(art_fname, new_art_fname)
+    Files_set.add(new_art_fname)
+
+# Now synchronize arcade ROMs.
+system = {
+    'name' : ES_MAME_PLATFORM,
+    'fullname' : 'MAME',
+    'path' : os.path.join(ES_ROMS_DIR, ES_MAME_PLATFORM),
+    'command' : command,
+    'platform' : ES_MAME_PLATFORM,
+    'theme' : ES_MAME_PLATFORM,
+    'extension_list' : ['.zip'],
+}
+if ES_MAME_PLATFORM in es_systems_idx:
+    raise RuntimeError('Platform {} already in es_systems_idx'.format(ES_MAME_PLATFORM))
+es_systems_list.append(system)
+es_systems_idx[ES_MAME_PLATFORM] = len(es_systems_list) - 1
+es_gamelist_dic[ES_MAME_PLATFORM] = []
+print(C_RED + 'Synchronizing AML Favourite ROMs...' + C_END)
+for mname in sorted(aml_favs, key = lambda x: x.lower()):
+    machine = aml_favs[mname]
+    asset_dic = aml_favs[mname]['assets']
+    es_rom = {
+        'name' : machine['description'],
+        'desc' : '',
+        'releasedate' : '',
+        'developer' : machine['manufacturer'],
+        'publisher' : '',
+        'genre' : machine['genre'],
+        'players' : machine['nplayers'],
+    }
+    es_gamelist_dic[ES_MAME_PLATFORM].append(es_rom)
+
+    # Copy ROM ZIP file and dependencies.
+    print(C_GREEN + 'Machine {}'.format(mname) + C_END)
+    machine_files = RSMF_dic[mname]
+    for mindex, rom_name in enumerate(machine_files['ROMs']):
+        print('ROM {}'.format(rom_name))
+        rom_fname = os.path.join(AML_MAME_ROMS_DIR, rom_name + '.zip')
+        new_rom_fname = os.path.join(ES_ROMS_DIR, ES_MAME_PLATFORM, rom_name + '.zip')
+        if mindex == 0:
+            es_rom['path'] = new_rom_fname
+            print('Added to ES database "{}"'.format(new_rom_fname))
+            rom_basename = os.path.basename(rom_fname)
+            print('Machine basename "{}"'.format(rom_basename))
+        copy_file_if_new(rom_fname, new_rom_fname)
+        Files_set.add(new_rom_fname)
+
+    # Copy ROM artwork file. Artwork must have same name as ROM (but different extension).
+    if not asset_dic[AML_ROM_ARTWORK_FIELD]:
+        print('Empty artwork {}. Skipping.'.format(AML_ROM_ARTWORK_FIELD))
+        es_rom['image'] = ''
+        continue
+    art_fname = asset_dic[AML_ROM_ARTWORK_FIELD]
+    art_basename = os.path.basename(art_fname)
+    art_ext = os.path.splitext(art_fname)[1]
+    rom_basename_noext = os.path.splitext(rom_basename)[0]
+    new_art_fname = os.path.join(ES_ROMS_DIR, ES_MAME_PLATFORM, rom_basename_noext + art_ext)
+    es_rom['image'] = new_art_fname
+    if art_fname.startswith('special://profile/'):
+        art_fname = art_fname.replace('special://profile/', KODI_USERDATA_DIR)
+    print(' Art {}'.format(art_basename))
+    copy_file_if_new(art_fname, new_art_fname)
     Files_set.add(new_art_fname)
 
 # Clean unknown files in destination directories.
+print(C_RED + 'Cleaning files in "{}"'.format(ES_ROMS_DIR) + C_END)
 clean_unknown_files(ES_ROMS_DIR, Files_set)
 
 # Generate es_systems.cfg.
-print('\nGenerating es_systems.cfg')
+print(C_RED + 'Generating es_systems.cfg' + C_END)
 o_sl = []
 o_sl.append('<!-- Generated automatically, do not edit! -->')
 o_sl.append('<systemList>')
@@ -264,7 +373,7 @@ for system in es_systems_list:
     o_sl.append(XML_text('platform', system['platform']))
     o_sl.append(XML_text('theme', system['theme']))
     o_sl.append('</system>')
-o_sl.append('</systemList>')
+o_sl.append('</systemList>\n')
 es_systems_fname = os.path.join(ES_CONFIG_DIR, 'es_systems.cfg')
 print('Writing file {}'.format(es_systems_fname))
 with open(es_systems_fname, 'w') as file_obj:
@@ -272,7 +381,7 @@ with open(es_systems_fname, 'w') as file_obj:
 
 # Generate gamelist.xml, one per platform.
 for es_platform, gamelist in es_gamelist_dic.iteritems():
-    print('\nGenerating gamelist.xml for system {}'.format(es_platform))
+    print(C_RED + 'Generating gamelist.xml for system {}'.format(es_platform) + C_END)
     o_sl = []
     o_sl.append('<!-- Generated automatically, do not edit! -->')
     o_sl.append('<gameList>')
@@ -296,4 +405,4 @@ for es_platform, gamelist in es_gamelist_dic.iteritems():
     if not os.path.exists(es_gamelist_dir): os.makedirs(es_gamelist_dir)
     with open(es_gamelist_fname, 'w') as file_obj:
         file_obj.write('\n'.join(o_sl).encode('utf-8'))
-print('Finished.')
+print(C_RED + 'Finished.' + C_END)
