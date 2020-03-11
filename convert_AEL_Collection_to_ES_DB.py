@@ -31,14 +31,15 @@ import xml.etree.ElementTree
 # --- Configuration ------------------------------------------------------------------------------
 AEL_COLLECTION_NAME = 'EmulationStation'
 AEL_ROM_ARTWORK_FIELD = 's_3dbox'
-AML_ROM_ARTWORK_FIELD = '3dbox' # 3dbox, cabinet, snap, title
+AML_ROM_ARTWORK_FIELD = 'snap' # 3dbox, cabinet, snap, title
 ES_MAME_PLATFORM = 'mame'
 RETROARCH_PATH = '/home/kodi/bin/retroarch'
 LIBRETRO_PATH = '/home/kodi/bin/libretro/'
+MAME_PATH = '/home/kodi/bin/mame64'
 KODI_USERDATA_DIR = '/home/kodi/.kodi/userdata/'
 AEL_DATA_DIR = '/home/kodi/.kodi/userdata/addon_data/plugin.program.advanced.emulator.launcher/'
 AML_DATA_DIR = '/home/kodi/.kodi/userdata/addon_data/plugin.program.AML/'
-AML_SOURCE_ROMS_DIR = '/home/kodi/MAME-ROMs/'
+AML_MAME_ROMS_DIR = '/home/kodi/MAME-ROMs/'
 ES_ROMS_DIR = '/home/kodi/EmulationStation-ROMs/'
 ES_CONFIG_DIR = '/home/kodi/.emulationstation/'
 
@@ -171,8 +172,8 @@ def copy_file_if_new(src_fname, dest_fname):
     print('Copy {}'.format(src_fname))
     print('  to {}'.format(dest_fname))
     dest_fname_dir = os.path.dirname(dest_fname)
-    # if not os.path.exists(dest_fname_dir): os.makedirs(dest_fname_dir)
-    # shutil.copy(src_fname, dest_fname)
+    if not os.path.exists(dest_fname_dir): os.makedirs(dest_fname_dir)
+    shutil.copy(src_fname, dest_fname)
 
 # files_set is a fully qualified file names.
 # Also cleans empty subdirectories.
@@ -186,13 +187,13 @@ def clean_unknown_files(dir_name, files_set):
             file_name = os.path.join(root, file)
             if file_name in files_set: continue
             print('RM file "{}"'.format(file_name))
-            # os.unlink(file_name)
+            os.unlink(file_name)
 
     # Clean empty subdirectories.
     for root, dirs, files in os.walk(dir_name):
         if dirs or files: continue
         print('RM empty dir "{}"'.format(root))
-        # os.rmdir(file_name)
+        os.rmdir(file_name)
 
 # --- Main ---------------------------------------------------------------------------------------
 print(C_RED + 'Converting AEL Collection {} to ES database'.format(AEL_COLLECTION_NAME) + C_END)
@@ -279,14 +280,13 @@ for rom in roms:
 
     # Copy ROM artwork file. Artwork must have same name as ROM (but different extension).
     art_fname = rom[AEL_ROM_ARTWORK_FIELD]
-    art_basename = os.path.basename(art_fname)
     art_ext = os.path.splitext(art_fname)[1]
     rom_basename_noext = os.path.splitext(rom_basename)[0]
     new_art_fname = os.path.join(ES_ROMS_DIR, es_platform, rom_basename_noext + art_ext)
     es_rom['image'] = new_art_fname
     if art_fname.startswith('special://profile/'):
         art_fname = art_fname.replace('special://profile/', KODI_USERDATA_DIR)
-    print(' Art {}'.format(art_basename))
+    print('Art {}'.format(os.path.basename(art_fname)))
     copy_file_if_new(art_fname, new_art_fname)
     Files_set.add(new_art_fname)
 
@@ -295,7 +295,7 @@ system = {
     'name' : ES_MAME_PLATFORM,
     'fullname' : 'MAME',
     'path' : os.path.join(ES_ROMS_DIR, ES_MAME_PLATFORM),
-    'command' : command,
+    'command' : '{} %BASENAME%'.format(MAME_PATH),
     'platform' : ES_MAME_PLATFORM,
     'theme' : ES_MAME_PLATFORM,
     'extension_list' : ['.zip'],
@@ -324,16 +324,17 @@ for mname in sorted(aml_favs, key = lambda x: x.lower()):
     print(C_GREEN + 'Machine {}'.format(mname) + C_END)
     machine_files = RSMF_dic[mname]
     for mindex, rom_name in enumerate(machine_files['ROMs']):
+        rom_name = rom_name + '.zip'
         print('ROM {}'.format(rom_name))
-        rom_fname = os.path.join(AML_MAME_ROMS_DIR, rom_name + '.zip')
-        new_rom_fname = os.path.join(ES_ROMS_DIR, ES_MAME_PLATFORM, rom_name + '.zip')
-        if mindex == 0:
-            es_rom['path'] = new_rom_fname
-            print('Added to ES database "{}"'.format(new_rom_fname))
-            rom_basename = os.path.basename(rom_fname)
-            print('Machine basename "{}"'.format(rom_basename))
+        rom_fname = os.path.join(AML_MAME_ROMS_DIR, rom_name)
+        new_rom_fname = os.path.join(ES_ROMS_DIR, ES_MAME_PLATFORM, rom_name)
         copy_file_if_new(rom_fname, new_rom_fname)
         Files_set.add(new_rom_fname)
+    new_rom_fname = os.path.join(ES_ROMS_DIR, ES_MAME_PLATFORM, mname + '.zip')
+    es_rom['path'] = new_rom_fname
+    rom_basename = mname + '.zip'
+    # print('Added to ES database "{}"'.format(new_rom_fname))
+    # print('Machine basename "{}"'.format(rom_basename))
 
     # Copy ROM artwork file. Artwork must have same name as ROM (but different extension).
     if not asset_dic[AML_ROM_ARTWORK_FIELD]:
@@ -348,12 +349,12 @@ for mname in sorted(aml_favs, key = lambda x: x.lower()):
     es_rom['image'] = new_art_fname
     if art_fname.startswith('special://profile/'):
         art_fname = art_fname.replace('special://profile/', KODI_USERDATA_DIR)
-    print(' Art {}'.format(art_basename))
+    print('Art {}'.format(art_basename))
     copy_file_if_new(art_fname, new_art_fname)
     Files_set.add(new_art_fname)
 
 # Clean unknown files in destination directories.
-print(C_RED + 'Cleaning files in "{}"'.format(ES_ROMS_DIR) + C_END)
+print(C_RED + 'Cleaning files and empty dirs in "{}"'.format(ES_ROMS_DIR) + C_END)
 clean_unknown_files(ES_ROMS_DIR, Files_set)
 
 # Generate es_systems.cfg.
@@ -363,7 +364,7 @@ o_sl.append('<!-- Generated automatically, do not edit! -->')
 o_sl.append('<systemList>')
 for system in es_systems_list:
     print('Processing system {}'.format(system['name']))
-    print('Extension list {}'.format(unicode(system['extension_list'])))
+    # print('Extension list {}'.format(unicode(system['extension_list'])))
     o_sl.append('<system>')
     o_sl.append(XML_text('name', system['name']))
     o_sl.append(XML_text('fullname', system['fullname']))
@@ -400,7 +401,7 @@ for es_platform, gamelist in es_gamelist_dic.iteritems():
     o_sl.append('</gameList>')
     es_gamelist_dir = os.path.join(ES_CONFIG_DIR, 'gamelists', es_platform)
     es_gamelist_fname = os.path.join(es_gamelist_dir, 'gamelist.xml')
-    print('Gamelist dir {}'.format(es_gamelist_dir))
+    # print('Gamelist dir {}'.format(es_gamelist_dir))
     print('Writing file {}'.format(es_gamelist_fname))
     if not os.path.exists(es_gamelist_dir): os.makedirs(es_gamelist_dir)
     with open(es_gamelist_fname, 'w') as file_obj:
