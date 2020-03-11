@@ -133,6 +133,27 @@ def text_unescape_XML(data_str):
 
     return data_str
 
+# files_set is a fully qualified file names.
+# Also cleans empty subdirectories.
+def clean_unknown_files(dir_name, files_set):
+    print('\nCleaning files in "{}"'.format(dir_name))
+    # Root is a string with a directory. dirs and files are lists.
+    # The loops produces an interation for every subdirectory in dir_name, including
+    # dir_name itself.
+    for root, dirs, files in os.walk(dir_name):
+        # Clean files not in list.
+        for file in files:
+            file_name = os.path.join(root, file)
+            if file_name not in files_set:
+                print('RM file "{}"'.format(file_name))
+                # os.unlink(file_name)
+
+    # Clean empty subdirectories.
+    for root, dirs, files in os.walk(dir_name):
+        if not dirs and not files:
+            print('RM empty dir "{}"'.format(root))
+            # os.rmdir(file_name)
+
 # --- Main ---------------------------------------------------------------------------------------
 print('Converting AEL Collection {} to ES database'.format(AEL_COLLECTION_NAME))
 
@@ -153,6 +174,7 @@ roms = read_Collection_ROMs_JSON(collection_ROMs_fname)
 es_systems_list = [] # List of new_system_dic() dictionaries.
 es_systems_idx = {} # Key platform, value index in es_systems_list
 es_gamelist_dic = {} # Key system name, value list of dictionaries new_game_dic().
+Files_set = set()
 for rom in roms:
     # Check if ES system exists for this ROM. If not create it.
     platform_tuple = AEL_to_ES_platform(rom['platform'])
@@ -204,7 +226,8 @@ for rom in roms:
     print('Copy {}'.format(rom_fname))
     print('  to {}'.format(new_rom_fname))
     if not os.path.exists(new_rom_dir): os.makedirs(new_rom_dir)
-    shutil.copy(rom_fname, new_rom_fname)
+    # shutil.copy(rom_fname, new_rom_fname)
+    Files_set.add(new_rom_fname)
 
     # Copy ROM artwork file. Artwork must have same name as ROM (but different extension).
     art_fname = rom[AEL_ROM_ARTWORK_FIELD]
@@ -218,7 +241,11 @@ for rom in roms:
     print(' Art {}'.format(art_basename))
     print('Copy {}'.format(art_fname))
     print('  to {}'.format(new_art_fname))
-    shutil.copy(art_fname, new_art_fname)
+    # shutil.copy(art_fname, new_art_fname)
+    Files_set.add(new_art_fname)
+
+# Clean unknown files in destination directories.
+clean_unknown_files(ES_ROMS_DIR, Files_set)
 
 # Generate es_systems.cfg.
 print('\nGenerating es_systems.cfg')
