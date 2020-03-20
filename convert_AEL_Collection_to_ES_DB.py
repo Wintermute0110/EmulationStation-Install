@@ -24,6 +24,7 @@
 from __future__ import unicode_literals
 import json
 import os
+import re
 import shutil
 import sys
 import xml.etree.ElementTree
@@ -47,23 +48,28 @@ ES_CONFIG_DIR = '/home/kodi/.emulationstation/'
 # ES platform names https://github.com/RetroPie/es-theme-carbon
 def AEL_to_ES_platform(platform):
     AEL_to_ES_platform = {
+        'Atari 2600' : ('atari2600', 'Atari 2600', 'xxxxx.so'),
+
         'NEC PC Engine' : ('pcengine', 'PC Engine', 'mednafen_pce_fast_libretro.so'),
+        'NEC PC Engine CDROM2' : ('pcenginecd', 'PC Engine CDROM2', 'xxxxx.so'),
 
         'Nintendo GameBoy' : ('gb', 'Nintendo GameBoy', 'xxxxx.so'),
         'Nintendo GameBoy Color' : ('gbc', 'Nintendo GameBoy Color', 'xxxxx.so'),
         'Nintendo GameBoy Advance' : ('gba', 'Nintendo GameBoy Advance', 'xxxxx.so'),
-        'Nintendo 64' : ('n64', 'Nintendo 64', 'xxxxx.so'),
         'Nintendo DS' : ('nds', 'Nintendo DS', 'xxxxx.so'),
+        'Nintendo Famicon Disk System' : ('fds', 'Nintendo Famicon Disk System', 'xxxxx.so'),
         'Nintendo NES' : ('nes', 'Nintendo Entertainment System', 'mesen_libretro.so'),
         'Nintendo SNES' : ('snes', 'Super Nintendo', 'snes9x_libretro.so'),
+        'Nintendo 64' : ('n64', 'Nintendo 64', 'xxxxx.so'),
+        'Nintendo GameCube' : ('gc', 'Nintendo GameCube', 'xxxxx.so'),
 
-        'Sega 32X' : ('sega32x', 'Sega 32X', 'picodrive_libretro.so'),
-        'Sega Dreamcast' : ('dreamcast', 'Sega Dreamcast', 'xxxxx.so'),
         'Sega Game Gear' : ('gamegear', 'Sega Game Gear', 'xxxxx.so'),
-        'Sega MegaCD' : ('segacd', 'Sega MegaCD', 'xxxxx.so'),
-        'Sega Mega Drive' : ('megadrive', 'Mega Drive', 'genesis_plus_gx_libretro.so'),
         'Sega Master System' : ('mastersystem', 'Master System', 'genesis_plus_gx_libretro.so'),
+        'Sega Mega Drive' : ('megadrive', 'Mega Drive', 'genesis_plus_gx_libretro.so'),
+        'Sega MegaCD' : ('segacd', 'Sega MegaCD', 'xxxxx.so'),        
+        'Sega 32X' : ('sega32x', 'Sega 32X', 'picodrive_libretro.so'),
         'Sega Saturn' : ('saturn', 'Sega Saturn', 'xxxxx.so'),
+        'Sega Dreamcast' : ('dreamcast', 'Sega Dreamcast', 'xxxxx.so'),
 
         'Sony PlayStation' :  ('psx', 'PlayStation', 'mednafen_psx_libretro.so'),
         'Sony PlayStation Portable' :  ('psp', 'PlayStation', 'mednafen_psx_libretro.so'),
@@ -169,6 +175,10 @@ def text_unescape_XML(data_str):
     return data_str
 
 def copy_file_if_new(src_fname, dest_fname):
+    # If source files does not exists return.
+    if not os.path.isfile(src_fname):
+        print('Source file does not exist.')
+        return
     # If destination file does not exists copy automatically.
     if os.path.isfile(dest_fname):
         # File exists. Check if sizes are different.
@@ -204,6 +214,15 @@ def clean_unknown_files(dir_name, files_set):
         if dirs or files: continue
         print('RM empty dir "{}"'.format(root))
         os.rmdir(file_name)
+
+# Converts a year string into ES date format, example: 19950311T000000.
+# Currently AEL only uses year so only the year needs to be converted.
+# If conversion not possible it returns ''
+def get_release_date(year):
+    if re.match('^\d\d\d\d$', year):
+        return '{}0101T000000'.format(year)
+    else:
+        return ''
 
 # --- Main ---------------------------------------------------------------------------------------
 print(C_RED + 'Converting AEL Collection {} to ES database'.format(AEL_COLLECTION_NAME) + C_END)
@@ -266,7 +285,7 @@ for rom in roms:
     es_rom = {
         'name' : rom['m_name'],
         'desc' : rom['m_plot'],
-        'releasedate' : '',
+        'releasedate' : get_release_date(rom['m_year']),
         'developer' : rom['m_developer'],
         'publisher' : '',
         'genre' : rom['m_genre'],
@@ -289,16 +308,20 @@ for rom in roms:
     Files_set.add(new_rom_fname)
 
     # Copy ROM artwork file. Artwork must have same name as ROM (but different extension).
-    art_fname = rom[AEL_ROM_ARTWORK_FIELD]
-    art_ext = os.path.splitext(art_fname)[1]
-    rom_basename_noext = os.path.splitext(rom_basename)[0]
-    new_art_fname = os.path.join(ES_ROMS_DIR, es_platform, rom_basename_noext + art_ext)
-    es_rom['image'] = new_art_fname
-    if art_fname.startswith('special://profile/'):
-        art_fname = art_fname.replace('special://profile/', KODI_USERDATA_DIR)
-    print('Art {}'.format(os.path.basename(art_fname)))
-    copy_file_if_new(art_fname, new_art_fname)
-    Files_set.add(new_art_fname)
+    if rom[AEL_ROM_ARTWORK_FIELD]:
+        art_fname = rom[AEL_ROM_ARTWORK_FIELD]
+        art_ext = os.path.splitext(art_fname)[1]
+        rom_basename_noext = os.path.splitext(rom_basename)[0]
+        new_art_fname = os.path.join(ES_ROMS_DIR, es_platform, rom_basename_noext + art_ext)
+        es_rom['image'] = new_art_fname
+        if art_fname.startswith('special://profile/'):
+            art_fname = art_fname.replace('special://profile/', KODI_USERDATA_DIR)
+        print('Art {}'.format(os.path.basename(art_fname)))
+        copy_file_if_new(art_fname, new_art_fname)
+        Files_set.add(new_art_fname)
+    else:
+        print('No artwork available.')
+        es_rom['image'] = ''
 
 # Now synchronize arcade ROMs.
 system = {
@@ -322,7 +345,7 @@ for mname in sorted(aml_favs, key = lambda x: x.lower()):
     es_rom = {
         'name' : machine['description'],
         'desc' : '',
-        'releasedate' : '',
+        'releasedate' : get_release_date(machine['year']),
         'developer' : machine['manufacturer'],
         'publisher' : '',
         'genre' : machine['genre'],
@@ -373,7 +396,7 @@ o_sl = []
 o_sl.append('<!-- Generated automatically, do not edit! -->')
 o_sl.append('<systemList>')
 for system in es_systems_list:
-    print('Processing system {}'.format(system['name']))
+    # print('Processing system {}'.format(system['name']))
     # print('Extension list {}'.format(unicode(system['extension_list'])))
     o_sl.append('<system>')
     o_sl.append(XML_text('name', system['name']))
@@ -412,7 +435,7 @@ for es_platform, gamelist in es_gamelist_dic.iteritems():
     es_gamelist_dir = os.path.join(ES_CONFIG_DIR, 'gamelists', es_platform)
     es_gamelist_fname = os.path.join(es_gamelist_dir, 'gamelist.xml')
     # print('Gamelist dir {}'.format(es_gamelist_dir))
-    print('Writing file {}'.format(es_gamelist_fname))
+    # print('Writing file {}'.format(es_gamelist_fname))
     if not os.path.exists(es_gamelist_dir): os.makedirs(es_gamelist_dir)
     with open(es_gamelist_fname, 'w') as file_obj:
         file_obj.write('\n'.join(o_sl).encode('utf-8'))
