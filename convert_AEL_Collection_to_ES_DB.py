@@ -46,30 +46,33 @@ ES_CONFIG_DIR = '/home/kodi/.emulationstation/'
 
 # Aborts program if platform cannot be converted, for example, the Unknown platform.
 # ES platform names https://github.com/RetroPie/es-theme-carbon
+# BIOSes required:
+# xxxxx - corename
+# ...
 def AEL_to_ES_platform(platform):
     AEL_to_ES_platform = {
-        'Atari 2600' : ('atari2600', 'Atari 2600', 'xxxxx.so'),
+        'Atari 2600' : ('atari2600', 'Atari 2600', 'stella_libretro.so'),
 
         'NEC PC Engine' : ('pcengine', 'PC Engine', 'mednafen_pce_fast_libretro.so'),
-        'NEC PC Engine CDROM2' : ('pcenginecd', 'PC Engine CDROM2', 'xxxxx.so'),
+        'NEC PC Engine CDROM2' : ('pcenginecd', 'PC Engine CDROM2', 'mednafen_pce_fast_libretro.so'),
 
-        'Nintendo GameBoy' : ('gb', 'Nintendo GameBoy', 'xxxxx.so'),
-        'Nintendo GameBoy Color' : ('gbc', 'Nintendo GameBoy Color', 'xxxxx.so'),
-        'Nintendo GameBoy Advance' : ('gba', 'Nintendo GameBoy Advance', 'xxxxx.so'),
-        'Nintendo DS' : ('nds', 'Nintendo DS', 'xxxxx.so'),
-        'Nintendo Famicon Disk System' : ('fds', 'Nintendo Famicon Disk System', 'xxxxx.so'),
+        'Nintendo GameBoy' : ('gb', 'Nintendo GameBoy', 'sameboy_libretro.so'),
+        'Nintendo GameBoy Color' : ('gbc', 'Nintendo GameBoy Color', 'sameboy_libretro.so'),
+        'Nintendo GameBoy Advance' : ('gba', 'Nintendo GameBoy Advance', 'mgba_libretro.so'),
+        'Nintendo DS' : ('nds', 'Nintendo DS', 'desmume_libretro.so'),
+        'Nintendo Famicon Disk System' : ('fds', 'Nintendo Famicon Disk System', 'mesen_libretro.so'),
         'Nintendo NES' : ('nes', 'Nintendo Entertainment System', 'mesen_libretro.so'),
         'Nintendo SNES' : ('snes', 'Super Nintendo', 'snes9x_libretro.so'),
-        'Nintendo 64' : ('n64', 'Nintendo 64', 'xxxxx.so'),
-        'Nintendo GameCube' : ('gc', 'Nintendo GameCube', 'xxxxx.so'),
+        'Nintendo 64' : ('n64', 'Nintendo 64', 'mupen64plus_next_libretro.so'),
+        'Nintendo GameCube' : ('gc', 'Nintendo GameCube', 'dolphin_libretro.so'),
 
-        'Sega Game Gear' : ('gamegear', 'Sega Game Gear', 'xxxxx.so'),
+        'Sega Game Gear' : ('gamegear', 'Sega Game Gear', 'genesis_plus_gx_libretro.so'),
         'Sega Master System' : ('mastersystem', 'Master System', 'genesis_plus_gx_libretro.so'),
         'Sega Mega Drive' : ('megadrive', 'Mega Drive', 'genesis_plus_gx_libretro.so'),
-        'Sega MegaCD' : ('segacd', 'Sega MegaCD', 'xxxxx.so'),        
+        'Sega MegaCD' : ('segacd', 'Sega MegaCD', 'genesis_plus_gx_libretro.so'),
         'Sega 32X' : ('sega32x', 'Sega 32X', 'picodrive_libretro.so'),
-        'Sega Saturn' : ('saturn', 'Sega Saturn', 'xxxxx.so'),
-        'Sega Dreamcast' : ('dreamcast', 'Sega Dreamcast', 'xxxxx.so'),
+        'Sega Saturn' : ('saturn', 'Sega Saturn', 'mednafen_saturn_libretro.so'),
+        'Sega Dreamcast' : ('dreamcast', 'Sega Dreamcast', 'flycast_libretro.so'),
 
         'Sony PlayStation' :  ('psx', 'PlayStation', 'mednafen_psx_libretro.so'),
         'Sony PlayStation Portable' :  ('psp', 'PlayStation', 'mednafen_psx_libretro.so'),
