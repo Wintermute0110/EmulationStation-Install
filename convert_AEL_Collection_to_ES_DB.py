@@ -263,6 +263,7 @@ es_systems_idx = {} # Key platform, value index in es_systems_list
 es_gamelist_dic = {} # Key system name, value list of dictionaries new_game_dic().
 Files_set = set()
 print(C_RED + 'Synchronizing AEL Collection ROMs...' + C_END)
+num_console_games = 0
 for rom in roms:
     # Check if ES system exists for this ROM. If not create it.
     platform_tuple = AEL_to_ES_platform(rom['platform'])
@@ -297,6 +298,7 @@ for rom in roms:
         'players' : rom['m_nplayers'],
     }
     es_gamelist_dic[es_platform].append(es_rom)
+    num_console_games += 1
 
     # Add ROM extension to the list of extensions for this system.
     rom_ext = os.path.splitext(rom['filename'])[1]
@@ -344,6 +346,7 @@ es_systems_list.append(system)
 es_systems_idx[ES_MAME_PLATFORM] = len(es_systems_list) - 1
 es_gamelist_dic[ES_MAME_PLATFORM] = []
 print(C_RED + 'Synchronizing AML Favourite ROMs...' + C_END)
+num_arcade_games = 0
 for mname in sorted(aml_favs, key = lambda x: x.lower()):
     machine = aml_favs[mname]
     asset_dic = aml_favs[mname]['assets']
@@ -398,6 +401,7 @@ for mname in sorted(aml_favs, key = lambda x: x.lower()):
     # Only add ROM if not a BIOS, etc.
     # Not need for a machine filter, the filter is done manually in AML.
     es_gamelist_dic[ES_MAME_PLATFORM].append(es_rom)
+    num_arcade_games += 1
 
 # Clean unknown files in destination directories.
 print(C_RED + 'Cleaning files and empty dirs in "{}"'.format(ES_ROMS_DIR) + C_END)
@@ -408,7 +412,7 @@ print(C_RED + 'Generating es_systems.cfg' + C_END)
 o_sl = []
 o_sl.append('<!-- Generated automatically, do not edit! -->')
 o_sl.append('<systemList>')
-for system in es_systems_list:
+for system in sorted(es_systems_list):
     # print('Processing system {}'.format(system['name']))
     # print('Extension list {}'.format(unicode(system['extension_list'])))
     o_sl.append('<system>')
@@ -427,7 +431,8 @@ with open(es_systems_fname, 'w') as file_obj:
     file_obj.write('\n'.join(o_sl).encode('utf-8'))
 
 # Generate gamelist.xml, one per platform.
-for es_platform, gamelist in es_gamelist_dic.iteritems():
+for es_platform in sorted(es_gamelist_dic):
+    gamelist = es_gamelist_dic[es_platform]
     print(C_RED + 'Generating gamelist.xml for system {}'.format(es_platform) + C_END)
     o_sl = []
     o_sl.append('<!-- Generated automatically, do not edit! -->')
@@ -452,4 +457,9 @@ for es_platform, gamelist in es_gamelist_dic.iteritems():
     if not os.path.exists(es_gamelist_dir): os.makedirs(es_gamelist_dir)
     with open(es_gamelist_fname, 'w') as file_obj:
         file_obj.write('\n'.join(o_sl).encode('utf-8'))
+
+# Statistics
 print(C_RED + 'Finished.' + C_END)
+print('{} console games'.format(num_console_games))
+print('{} arcade games'.format(num_arcade_games))
+print('{} total games'.format(num_console_games + num_arcade_games))
