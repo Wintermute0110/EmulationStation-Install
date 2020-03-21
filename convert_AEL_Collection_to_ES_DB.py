@@ -38,10 +38,12 @@ RETROARCH_PATH = '/home/kodi/bin/retroarch'
 LIBRETRO_PATH = '/home/kodi/bin/libretro/'
 MAME_PATH = '/home/kodi/bin/mame64'
 KODI_USERDATA_DIR = '/home/kodi/.kodi/userdata/'
+AEL_CODE_DIR = '/home/kodi/.kodi/addons/plugin.program.advanced.emulator.launcher/'
 AEL_DATA_DIR = '/home/kodi/.kodi/userdata/addon_data/plugin.program.advanced.emulator.launcher/'
 AML_DATA_DIR = '/home/kodi/.kodi/userdata/addon_data/plugin.program.AML/'
 AML_MAME_ROMS_DIR = '/home/kodi/MAME-ROMs/'
 ES_ROMS_DIR = '/home/kodi/EmulationStation-ROMs/'
+ES_ROMS_MAME_EXTRA_DIR = '/home/kodi/EmulationStation-ROMs/mame-extra/'
 ES_CONFIG_DIR = '/home/kodi/.emulationstation/'
 
 # Aborts program if platform cannot be converted, for example, the Unknown platform.
@@ -354,16 +356,20 @@ for mname in sorted(aml_favs, key = lambda x: x.lower()):
         'genre' : machine['genre'],
         'players' : machine['nplayers'],
     }
-    es_gamelist_dic[ES_MAME_PLATFORM].append(es_rom)
 
     # Copy ROM ZIP file and dependencies.
     print(C_GREEN + 'Machine {}'.format(mname) + C_END)
     machine_files = RSMF_dic[mname]
-    for mindex, rom_name in enumerate(machine_files['ROMs']):
-        rom_name = rom_name + '.zip'
-        print('ROM {}'.format(rom_name))
-        rom_fname = os.path.join(AML_MAME_ROMS_DIR, rom_name)
-        new_rom_fname = os.path.join(ES_ROMS_DIR, ES_MAME_PLATFORM, rom_name)
+    for mindex, rom_basename_noext in enumerate(machine_files['ROMs']):
+        rom_basename = rom_basename_noext + '.zip'
+        print('ROM {}'.format(rom_basename))
+        rom_fname = os.path.join(AML_MAME_ROMS_DIR, rom_basename)
+        # Copy machine main ROMs to MAME directory. Copy dependencies to an
+        # alternative directory so don't show in EmulationStation.
+        if rom_basename_noext == mname:
+            new_rom_fname = os.path.join(ES_ROMS_DIR, ES_MAME_PLATFORM, rom_basename)
+        else:
+            new_rom_fname = os.path.join(ES_ROMS_MAME_EXTRA_DIR, rom_basename)
         copy_file_if_new(rom_fname, new_rom_fname)
         Files_set.add(new_rom_fname)
     new_rom_fname = os.path.join(ES_ROMS_DIR, ES_MAME_PLATFORM, mname + '.zip')
@@ -388,6 +394,10 @@ for mname in sorted(aml_favs, key = lambda x: x.lower()):
     print('Art {}'.format(art_basename))
     copy_file_if_new(art_fname, new_art_fname)
     Files_set.add(new_art_fname)
+
+    # Only add ROM if not a BIOS, etc.
+    # Not need for a machine filter, the filter is done manually in AML.
+    es_gamelist_dic[ES_MAME_PLATFORM].append(es_rom)
 
 # Clean unknown files in destination directories.
 print(C_RED + 'Cleaning files and empty dirs in "{}"'.format(ES_ROMS_DIR) + C_END)
