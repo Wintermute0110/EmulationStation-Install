@@ -218,7 +218,7 @@ def clean_unknown_files(dir_name, files_set):
     for root, dirs, files in os.walk(dir_name):
         if dirs or files: continue
         print('RM empty dir "{}"'.format(root))
-        os.rmdir(file_name)
+        os.rmdir(root)
 
 # Converts a year string into ES date format, example: 19950311T000000.
 # Currently AEL only uses year so only the year needs to be converted.
