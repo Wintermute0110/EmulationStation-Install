@@ -352,7 +352,7 @@ for mname in sorted(aml_favs, key = lambda x: x.lower()):
     asset_dic = aml_favs[mname]['assets']
     es_rom = {
         'name' : machine['description'],
-        'desc' : '',
+        'desc' : asset_dic['plot'],
         'releasedate' : get_release_date(machine['year']),
         'developer' : machine['manufacturer'],
         'publisher' : '',
