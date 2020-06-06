@@ -21,7 +21,8 @@ $ cmake .
 $ make -j8
 ```
 
-The usual compilation errors... I solved them with this patch:
+The usual compilation errors... I solved them with this patch. NOTE that on
+Ubuntu Focal Fossa this is not necessary.
 
 ```
 diff --git a/CMake/Packages/FindSDL2.cmake b/CMake/Packages/FindSDL2.cmake

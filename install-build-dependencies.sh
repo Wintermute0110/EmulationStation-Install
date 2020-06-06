@@ -11,6 +11,8 @@ apt install \
     libasound2-dev \
     libgl1-mesa-dev \
     libzip-dev \
+    libvlc-dev \
+    rapidjson-dev \
     build-essential \
     git \
     cmake \
