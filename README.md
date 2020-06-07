@@ -33,6 +33,28 @@ diff --git a/CMake/Packages/FindSDL2.cmake b/CMake/Packages/FindSDL2.cmake
  )
 ```
 
+To run EmulationStation with the script `emulationstation.sh` edit the file
+`retropie-EmulationStation/es-core/src/platform.cpp` and comment a couple of lines of code:
+
+```
+diff --git a/es-core/src/platform.cpp b/es-core/src/platform.cpp
+@@ -78,12 +78,12 @@ void processQuitMode()
+        case QuitMode::REBOOT:
+                LOG(LogInfo) << "Rebooting system";
+                touch("/tmp/es-sysrestart");
+-               runRestartCommand();
++               // runRestartCommand();
+                break;
+        case QuitMode::SHUTDOWN:
+                LOG(LogInfo) << "Shutting system down";
+                touch("/tmp/es-shutdown");
+-               runShutdownCommand();
++               // runShutdownCommand();
+                break;
+        }
+ }
+```
+
 ### Running RetroPie ES for the first time
 
 RetroPie ES creates a default `/home/kodi/.emulationstation/es_systems.cfg`. After one
@@ -104,9 +126,7 @@ by many themes.
 
 [Official ES Getting Started](https://emulationstation.org/gettingstarted.html)
 
-
 [Recalbox ES fork](https://gitlab.com/recalbox/recalbox-emulationstation)
-
 
 [Batocera.linux web](https://batocera.org/)
 
