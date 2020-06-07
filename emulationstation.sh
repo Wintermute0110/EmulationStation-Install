@@ -1,7 +1,11 @@
 #!/bin/sh
 
-# A link named emulationstation pointing to the ES executable must be in the
-# same directory as this script file.
+# * A link named emulationstation pointing to the ES executable must be in the
+#   same directory as this script file.
+# * reboot and poweroff are symlinks to systemctl. systemd only allows to
+#   shutdown the system to logged in users. This is the reason those
+#   commands cannot be used in this script. DBus must be used
+#   for rebooting/powering off.
 
 esdir="$(dirname $0)"
 echo "Starting emulationstation.sh in $esdir"
@@ -17,13 +21,13 @@ while true; do
     if [ -f /tmp/es-sysrestart ]; then
 	echo "Rebooting system..."
         rm -f /tmp/es-sysrestart
-        reboot
+        /usr/sbin/reboot
         break
     fi
     if [ -f /tmp/es-shutdown ]; then
 	echo "Shutting down system..."
         rm -f /tmp/es-shutdown
-        poweroff
+        /usr/sbin/poweroff
         break
     fi
     break
