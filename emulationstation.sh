@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# A link named emulationstation pointing to the ES executable must be in the
+# same directory as this script file.
+
 esdir="$(dirname $0)"
 echo "Starting emulationstation.sh in $esdir"
 while true; do
@@ -14,13 +17,13 @@ while true; do
     if [ -f /tmp/es-sysrestart ]; then
 	echo "Rebooting system..."
         rm -f /tmp/es-sysrestart
-        # reboot
+        reboot
         break
     fi
     if [ -f /tmp/es-shutdown ]; then
 	echo "Shutting down system..."
         rm -f /tmp/es-shutdown
-        # poweroff
+        poweroff
         break
     fi
     break
