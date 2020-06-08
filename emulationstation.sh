@@ -21,13 +21,15 @@ while true; do
     if [ -f /tmp/es-sysrestart ]; then
 	echo "Rebooting system..."
         rm -f /tmp/es-sysrestart
-        /usr/sbin/reboot
+        # reboot
+        dbus-send --system --print-reply --dest=org.freedesktop.login1 /org/freedesktop/login1 "org.freedesktop.login1.Manager.Reboot" boolean:true
         break
     fi
     if [ -f /tmp/es-shutdown ]; then
 	echo "Shutting down system..."
         rm -f /tmp/es-shutdown
-        /usr/sbin/poweroff
+        # poweroff
+        dbus-send --system --print-reply --dest=org.freedesktop.login1 /org/freedesktop/login1 "org.freedesktop.login1.Manager.PowerOff" boolean:true
         break
     fi
     break
