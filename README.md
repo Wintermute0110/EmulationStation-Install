@@ -2,10 +2,7 @@
 
 Scripts to easily compile, install and run EmulationStation.
 
-I tested **Retropie EmulationStation**, **Recalbox EmulationStation** and 
-**Batocera EmulationStation** in Debian Unstable. Only Retropie ES works and hence I include
-instructions here for that. Additional comments about the other version of ES can be
-found in the [NOTES file](./NOTES.md).
+I tested several forsk of EmulationStation including **Retropie EmulationStation**, **Recalbox EmulationStation** and **Batocera EmulationStation** in Debian Unstable. Only Retropie ES semms to work well and hence here I include instructions to build and use that fork only. Additional comments about the other forks of ES can be found in the [NOTES file](./NOTES.md).
 
 ## RetroPie EmulationStation
 
@@ -14,15 +11,14 @@ found in the [NOTES file](./NOTES.md).
 Cloning and compilation:
 
 ```
-$ git clone https://github.com/RetroPie/EmulationStation.git retropie-EmulationStation
-$ cd retropie-EmulationStation
+$ git clone https://github.com/RetroPie/EmulationStation.git retropie-ES
+$ cd retropie-ES
 $ git submodule update --init --recursive
 $ cmake .
 $ make -j8
 ```
 
-The usual compilation errors... I solved them with this patch. NOTE that on
-Ubuntu Focal Fossa this is not necessary.
+The usual compilation errors... I solved them with this patch. NOTE that on Ubuntu Focal Fossa this is not necessary.
 
 ```
 diff --git a/CMake/Packages/FindSDL2.cmake b/CMake/Packages/FindSDL2.cmake
@@ -34,8 +30,7 @@ diff --git a/CMake/Packages/FindSDL2.cmake b/CMake/Packages/FindSDL2.cmake
  )
 ```
 
-To run EmulationStation with the script `emulationstation.sh` edit the file
-`retropie-EmulationStation/es-core/src/platform.cpp` and comment a couple of lines of code:
+To run EmulationStation with the script `emulationstation.sh` and be able to reboot and power off the system, edit the file `retropie-ES/es-core/src/platform.cpp` and comment a couple of lines of code:
 
 ```
 diff --git a/es-core/src/platform.cpp b/es-core/src/platform.cpp
@@ -58,29 +53,23 @@ diff --git a/es-core/src/platform.cpp b/es-core/src/platform.cpp
 
 ### Running RetroPie ES for the first time
 
-RetroPie ES creates a default `/home/kodi/.emulationstation/es_systems.cfg`. After one
-platform is configured then the keyboard or a gamepad must be configured in ES.
-By defaul EmulationStation looks really ugly unless a theme is installed.
+RetroPie ES creates a default `/home/kodi/.emulationstation/es_systems.cfg`. After one platform is configured then the keyboard or a gamepad must be configured in ES. By defaul EmulationStation looks really ugly unless a theme is installed.
 
-Even if you use the keyboard it must be configured to control ES. If the file `es????` does
-not exists, ES asks to configure a control device. Additional control devices can
-be configured later.
+Even if you use the keyboard to control ES it must be configured to control ES. In other words, you can not use your keyboard or any other medium right away without configuring it in ES first. If the file `es_input.cfg` does not exist, ES asks to configure a control device. Additional control devices can be configured later.
 
 To exit ES press `F4` on the keyboard at any time.
 
-### Installing ES Themes
+### Installing ES themes or skins
 
-Place themes in `/home/kodi/.emulationstation/themes/`. ES scans this directory for
-themes automatically at startup. The directory name of the theme is irrelevant.
+Place themes in `/home/kodi/.emulationstation/themes/`. ES scans this directory for themes automatically at startup. The directory name of the theme is irrelevant.
 
-#### Retropie Themes
+#### Retropie themes
 
-[Retropie ES Carbon theme](https://github.com/RetroPie/es-theme-carbon)
+[Retropie ES Carbon theme (default theme)](https://github.com/RetroPie/es-theme-carbon)
 
 Carbon is the default theme for Retropie.
 
-[This script](https://github.com/RetroPie/RetroPie-Setup/blob/master/scriptmodules/supplementary/esthemes.sh)
-has a collection of all supported Retropie themes. See the function `gui_esthemes()`
+[This script](https://github.com/RetroPie/RetroPie-Setup/blob/master/scriptmodules/supplementary/esthemes.sh) has a collection of all supported Retropie themes. See the function `gui_esthemes()`
 
 ```
 local themes=(
@@ -89,8 +78,7 @@ local themes=(
         ...
 ```
 
-The first part of the theme is the Github user name and the second part is the repository name.
-To download the theme, build the Github URL like this:
+The first part of the theme is the Github user name and the second part is the repository name. To download the theme, build the Github URL like this:
 
 ```
 https://github.com/$USERNAME/es-theme-$THEMENAME
@@ -101,25 +89,29 @@ For example, to download the theme `RetroPie carbon` use the URL `https://github
 Retropie also has a [theme preview repository](https://github.com/wetriner/es-theme-gallery) in
 Github and another in the [Retropie documentation](https://retropie.org.uk/docs/Themes/).
 
-#### Batocera Themes
+#### Batocera themes
 
-[Github Batocera ES theme](https://github.com/batocera-linux/batocera-themes)
+[Github Batocera ES theme (default theme)](https://github.com/batocera-linux/batocera-themes)
 
-#### Recalbox Themes
+#### EmuELEC themes
+
+[EmuELEC Carbon ES theme (default theme)](https://github.com/EmuELEC/es-theme-EmuELEC-carbon)
+
+EmuELEC themes do not work on Retropie ES.
+
+#### Recalbox themes
 
 [Recalbox ES themes](https://gitlab.com/recalbox/recalbox-themes)
 
-Recalbox has a `resources` directory at the same level as `themes`. I'm not sure if the
-resources are used by ES or not, in other words, if the `resources` directory must be
-installed in `/home/kodi/.emulationstation/`.
+**IMPORTANT** Recalbox themes do not work well with the Retropie fork of ES. When you select a Recalbox theme ES freezes some seconds. Also, some Recalbox platform names do not match the Retropie ones.
+
+Recalbox has a `resources` directory at the same level as `themes`. I'm not sure if the resources are used by ES or not, in other words, if the `resources` directory must be installed in `/home/kodi/.emulationstation/`.
 
 ### Artwork for the ROMs
 
-ES supports only once piece of artwork that must be set in `gamelist.xml` togheter
-with the ROM metadata.
+ES supports only once piece of artwork that must be set in `gamelist.xml` togheter with the ROM metadata.
 
-Retropie ES seems to also support the tag `<marquee>` but I'm not sure if it is used
-by many themes.
+Retropie ES seems to also support the tag `<marquee>` but I'm not sure if it is used by many themes.
 
 ## Some useful Links
 
