@@ -11,9 +11,15 @@ esdir="$(dirname $0)"
 echo "Starting emulationstation.sh in $esdir"
 while true; do
     rm -f /tmp/es-restart /tmp/es-sysrestart /tmp/es-shutdown
+    # Dump core for debugging purposes.
+    # ulimit -c unlimited; "$esdir/emulationstation" "$@"
     "$esdir/emulationstation" "$@"
     ret=$?
     echo "EmulationStation returned $ret"
+    if [ $ret -eq 139 ]; then
+        echo "EmulationStation crashed. Restarting..."
+        continue
+    fi
     if [ -f /tmp/es-restart ]; then
         echo "Restarting EmulationStation..."
         continue
