@@ -12,8 +12,9 @@ echo "Starting emulationstation.sh in $esdir"
 while true; do
     rm -f /tmp/es-restart /tmp/es-sysrestart /tmp/es-shutdown
     # Dump core for debugging purposes.
-    # ulimit -c unlimited; "$esdir/emulationstation" "$@"
-    "$esdir/emulationstation" "$@"
+    ulimit -c unlimited; "$esdir/emulationstation" --no-exit --debug "$@"
+    # Default running method, do not allow ES to exit.
+    # "$esdir/emulationstation" --no-exit "$@"
     ret=$?
     echo "EmulationStation returned $ret"
     if [ $ret -eq 139 ]; then
@@ -25,14 +26,14 @@ while true; do
         continue
     fi
     if [ -f /tmp/es-sysrestart ]; then
-	echo "Rebooting system..."
+        echo "Rebooting system..."
         rm -f /tmp/es-sysrestart
         # reboot
         dbus-send --system --print-reply --dest=org.freedesktop.login1 /org/freedesktop/login1 "org.freedesktop.login1.Manager.Reboot" boolean:true
         break
     fi
     if [ -f /tmp/es-shutdown ]; then
-	echo "Shutting down system..."
+        echo "Shutting down system..."
         rm -f /tmp/es-shutdown
         # poweroff
         dbus-send --system --print-reply --dest=org.freedesktop.login1 /org/freedesktop/login1 "org.freedesktop.login1.Manager.PowerOff" boolean:true
